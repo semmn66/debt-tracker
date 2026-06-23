@@ -1511,12 +1511,13 @@ let audioCtx;
 function getAudioCtx() {
   if (!audioCtx) {
     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    // Resume if suspended (mobile WebView restriction)
-    if (audioCtx.state === 'suspended') audioCtx.resume();
   }
   if (audioCtx.state === 'suspended') audioCtx.resume();
   return audioCtx;
 }
+// Auto-resume AudioContext on first user interaction (required by mobile WebViews)
+document.addEventListener('touchstart', () => getAudioCtx(), { once: true });
+document.addEventListener('click', () => getAudioCtx(), { once: true });
 function beep(freq, duration, type = 'sine', vol = 0.08) {
   try {
     const ctx = getAudioCtx();
