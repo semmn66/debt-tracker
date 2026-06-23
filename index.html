@@ -1509,12 +1509,18 @@ const confetti = $('confetti');
 // Audio context for simple beeps
 let audioCtx;
 function getAudioCtx() {
-  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    // Resume if suspended (mobile WebView restriction)
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+  }
+  if (audioCtx.state === 'suspended') audioCtx.resume();
   return audioCtx;
 }
 function beep(freq, duration, type = 'sine', vol = 0.08) {
   try {
     const ctx = getAudioCtx();
+    if (ctx.state === 'suspended') { ctx.resume(); return; }
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.type = type;
