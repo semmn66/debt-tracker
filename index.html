@@ -1,0 +1,2518 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>还钱之假如我欠款十万元</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --red: #ff5e5e;
+    --red-glow: rgba(255,94,94,0.3);
+    --green: #4ade80;
+    --green-glow: rgba(74,222,128,0.3);
+    --gold: #fbbf24;
+    --bg: #0a0a0a;
+    --card: #141414;
+    --card2: #1a1a1a;
+    --border: #222;
+    --text: #e5e5e5;
+    --sub: #6b6b6b;
+    --muted: #3a3a3a;
+    --text-bright: #fff;
+  }
+
+  body.light {
+    --red: #e03131;
+    --red-glow: rgba(224,49,49,0.15);
+    --green: #2f9e44;
+    --green-glow: rgba(47,158,68,0.15);
+    --gold: #e67700;
+    --bg: #f5f5f5;
+    --card: #ffffff;
+    --card2: #fafafa;
+    --border: #e0e0e0;
+    --text: #1a1a1a;
+    --sub: #888;
+    --muted: #bbb;
+    --text-bright: #1a1a1a;
+  }
+  body.light .input-row input { color: #1a1a1a; }
+  body.light .input-row input::placeholder { color: #bbb; }
+  body.light .book-add-bar input { color: #1a1a1a; }
+  body.light .book-add-bar input::placeholder { color: #bbb; }
+  body.light .book-add-bar select { color: #1a1a1a; }
+  body.light .btn-pay:disabled { background: #ddd; color: #aaa; }
+  body.light .history-item .date { color: #bbb; }
+  body.light .empty-history { color: #ccc; }
+  body.light .reset-link { color: #bbb; }
+  body.light .reset-link:hover { color: var(--red); }
+  body.light .book-tx-date { color: #bbb; }
+  body.light .ht-date { color: #bbb; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 16px;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+
+  .app {
+    width: 100%;
+    max-width: 420px;
+    padding: 8px 0 40px;
+  }
+
+  /* ── Header ── */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    gap: 8px;
+  }
+  .header h1 {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--sub);
+    letter-spacing: 0.5px;
+    flex: 1;
+    text-align: center;
+  }
+  .tab-nav {
+    display: flex;
+    background: var(--card);
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+  .tab-btn {
+    padding: 9px 16px;
+    border: none;
+    background: transparent;
+    color: var(--sub);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .tab-btn.active {
+    background: var(--red);
+    color: #fff;
+  }
+  .tab-btn:not(.active):hover { color: var(--text-bright); }
+  .streak-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--card);
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 13px;
+    color: var(--gold);
+    border: 1px solid rgba(251,191,36,0.2);
+  }
+  .streak-badge .fire { font-size: 16px; }
+
+  /* ── Debt Circle ── */
+  .debt-circle-wrap {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 16px;
+  }
+  .debt-circle {
+    position: relative;
+    width: 160px;
+    height: 160px;
+  }
+  .debt-circle svg {
+    transform: rotate(-90deg);
+    transform-origin: center center;
+  }
+  .debt-circle .track {
+    fill: none;
+    stroke: var(--border);
+    stroke-width: 10;
+  }
+  .debt-circle .fill {
+    fill: none;
+    stroke: var(--red);
+    stroke-width: 10;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 0.6s cubic-bezier(0.4, 0, 0.2, 1), stroke 0.5s;
+  }
+  .debt-circle .fill.cleared { stroke: var(--green); }
+  .debt-circle-inner {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  .debt-number {
+    font-size: 29px;
+    font-weight: 800;
+    color: var(--red);
+    letter-spacing: -1px;
+    transition: color 0.5s;
+    font-variant-numeric: tabular-nums;
+    font-family: 'SF Mono', 'JetBrains Mono', 'Menlo', monospace;
+  }
+  .debt-number.cleared { color: var(--green); }
+  .debt-sub {
+    font-size: 11px;
+    color: var(--sub);
+    margin-top: 2px;
+  }
+
+  /* ── Stats Row ── */
+  .stats-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  .stat-card {
+    background: var(--card);
+    border-radius: 14px;
+    padding: 14px 10px;
+    text-align: center;
+    border: 1px solid var(--border);
+  }
+  .stat-value {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-bright);
+  }
+  .stat-value.green { color: var(--green); }
+  .stat-value.gold { color: var(--gold); }
+  .stat-label {
+    font-size: 11px;
+    color: var(--sub);
+    margin-top: 4px;
+  }
+
+  /* ── Quote ── */
+  .quote-box {
+    text-align: center;
+    padding: 12px 16px;
+    margin-bottom: 20px;
+    background: var(--card);
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    transition: all 0.3s;
+  }
+  .quote-text {
+    font-size: 13px;
+    color: #888;
+    line-height: 1.6;
+    transition: color 0.3s;
+  }
+  .quote-box.highlight {
+    border-color: rgba(251,191,36,0.3);
+  }
+  .quote-box.highlight .quote-text { color: #bbb; }
+
+  /* ── Input ── */
+  .input-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .input-row input {
+    flex: 1;
+    padding: 14px 16px;
+    border: 2px solid var(--border);
+    border-radius: 14px;
+    background: var(--card);
+    color: #fff;
+    font-size: 20px;
+    font-weight: 600;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    font-family: 'SF Mono', 'JetBrains Mono', 'Menlo', monospace;
+  }
+  .input-row input:focus {
+    border-color: var(--red);
+    box-shadow: 0 0 0 4px var(--red-glow);
+  }
+  .input-row input::placeholder { color: #333; font-weight: 400; }
+  .input-row input:disabled { opacity: 0.4; }
+  .btn-pay {
+    padding: 14px 28px;
+    border: none;
+    border-radius: 14px;
+    background: var(--red);
+    color: #fff;
+    font-size: 17px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+    letter-spacing: 0.5px;
+  }
+  .btn-pay:hover { background: #e84e4e; }
+  .btn-pay:active { transform: scale(0.95); }
+  .btn-pay:disabled { background: #222; color: #444; cursor: not-allowed; transform: none; }
+
+  /* ── Quick Buttons ── */
+  .quick-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 22px;
+  }
+  .quick-btn {
+    flex: 1;
+    padding: 11px 0;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--card);
+    color: #888;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .quick-btn:active { background: #222; color: var(--red); border-color: var(--red); }
+
+  /* ── History ── */
+  .section-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+  .section-head h2 {
+    font-size: 14px;
+    color: var(--sub);
+    font-weight: 500;
+  }
+  .section-head .count {
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 360px;
+    overflow-y: auto;
+    padding-right: 4px;
+  }
+  .history-list::-webkit-scrollbar { width: 3px; }
+  .history-list::-webkit-scrollbar-thumb { background: #1f1f1f; border-radius: 2px; }
+
+  .history-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    background: var(--card);
+    border-radius: 10px;
+    border: 1px solid var(--border);
+  }
+  .history-item .ht-icon {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+    background: rgba(255,255,255,0.05);
+  }
+  .history-item .ht-info { flex: 1; min-width: 0; }
+  .history-item .ht-amount {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text);
+  }
+  .history-item .ht-date {
+    font-size: 11px;
+    color: #4a4a4a;
+    margin-top: 1px;
+  }
+  .history-item .ht-paid {
+    font-size: 16px;
+    font-weight: 700;
+    text-align: right;
+    white-space: nowrap;
+    color: var(--green);
+  }
+  .history-item .ht-del {
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    font-size: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.15s;
+  }
+  .history-item .ht-del:hover { color: var(--red); border-color: var(--red); }
+
+  .empty-history {
+    text-align: center;
+    color: #2a2a2a;
+    font-size: 14px;
+    padding: 36px 0;
+  }
+
+  /* ── Toast ── */
+  .toast {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-120px);
+    background: var(--green);
+    color: #000;
+    padding: 12px 28px;
+    border-radius: 30px;
+    font-weight: 700;
+    font-size: 15px;
+    z-index: 999;
+    transition: transform 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    pointer-events: none;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* ── Milestone Modal ── */
+  .milestone-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.85);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+  }
+  .milestone-overlay.show { opacity: 1; pointer-events: auto; }
+  .milestone-card {
+    background: var(--card2);
+    border-radius: 24px;
+    padding: 36px 28px;
+    text-align: center;
+    border: 1px solid var(--border);
+    max-width: 320px;
+    width: 90%;
+  }
+  .milestone-emoji { font-size: 60px; margin-bottom: 12px; }
+  .milestone-title { font-size: 22px; font-weight: 700; margin-bottom: 6px; color: var(--text-bright); }
+  .milestone-sub { font-size: 14px; color: var(--sub); margin-bottom: 20px; line-height: 1.6; }
+  .milestone-btn {
+    padding: 12px 40px;
+    border: none;
+    border-radius: 12px;
+    background: var(--green);
+    color: #000;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.15s;
+  }
+  .milestone-btn:active { transform: scale(0.95); }
+
+  /* ── Confetti ── */
+  .confetti {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 1001;
+  }
+  .confetti-piece {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    border-radius: 3px;
+    animation: confetti-fall linear forwards;
+  }
+  @keyframes confetti-fall {
+    0%   { transform: translateY(-10vh) rotate(0deg) scale(1); opacity: 1; }
+    80%  { opacity: 1; }
+    100% { transform: translateY(110vh) rotate(900deg) scale(0.3); opacity: 0; }
+  }
+
+  /* ── Footer ── */
+  .footer {
+    text-align: center;
+    margin-top: 20px;
+  }
+  .reset-link {
+    background: none;
+    border: none;
+    color: #333;
+    font-size: 12px;
+    cursor: pointer;
+    padding: 8px 16px;
+    transition: color 0.2s;
+  }
+  .reset-link:hover { color: var(--red); }
+
+  /* ── Gear Button ── */
+  .gear-btn {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--card);
+    color: var(--sub);
+    font-size: 18px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    flex-shrink: 0;
+    line-height: 1;
+  }
+  .gear-btn:hover { color: var(--text-bright); border-color: #555; }
+  .gear-btn svg { width: 18px; height: 18px; stroke: currentColor; }
+
+  /* ── Settings Panel ── */
+  .settings-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 1100;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s;
+  }
+  .settings-overlay.show { opacity: 1; pointer-events: auto; }
+
+  .settings-panel {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 320px;
+    max-width: 85vw;
+    background: var(--bg);
+    z-index: 1101;
+    transform: translateX(-100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .settings-panel.show { transform: translateX(0); }
+
+  /* Context filtering: hide groups not matching current context */
+  .settings-panel.ctx-debt .settings-group[data-show="book"] { display: none; }
+  .settings-panel.ctx-book .settings-group[data-show="debt"] { display: none; }
+
+  .settings-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px;
+    border-bottom: 1px solid var(--border);
+  }
+  .settings-header h2 {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .settings-close {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--card);
+    color: var(--sub);
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+  }
+  .settings-close:hover { color: var(--text-bright); border-color: #555; }
+
+  .settings-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px 0;
+  }
+  .settings-body::-webkit-scrollbar { width: 3px; }
+  .settings-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .settings-group {
+    padding: 12px 20px;
+  }
+  .settings-group-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 10px;
+  }
+
+  .setting-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 0;
+    border-bottom: 1px solid rgba(128,128,128,0.08);
+  }
+  .setting-item:last-child { border-bottom: none; }
+  .setting-label {
+    font-size: 14px;
+    color: var(--text);
+  }
+  .setting-desc {
+    font-size: 11px;
+    color: var(--sub);
+    margin-top: 2px;
+  }
+
+  /* Toggle switch */
+  .toggle {
+    position: relative;
+    width: 48px; height: 28px;
+    flex-shrink: 0;
+  }
+  .toggle input { opacity: 0; width: 0; height: 0; }
+  .toggle .slider {
+    position: absolute;
+    inset: 0;
+    background: var(--border);
+    border-radius: 14px;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .toggle .slider::after {
+    content: '';
+    position: absolute;
+    top: 3px; left: 3px;
+    width: 22px; height: 22px;
+    background: #fff;
+    border-radius: 50%;
+    transition: transform 0.2s;
+  }
+  .toggle input:checked + .slider { background: var(--green); }
+  .toggle input:checked + .slider::after { transform: translateX(20px); }
+
+  /* Setting number input */
+  .setting-input {
+    width: 110px;
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--card);
+    color: var(--text);
+    font-size: 14px;
+    text-align: right;
+    outline: none;
+    font-family: 'SF Mono', 'JetBrains Mono', 'Menlo', monospace;
+    flex-shrink: 0;
+  }
+  .setting-input:focus { border-color: var(--red); }
+
+  /* Quick amount edit row */
+  .quick-edit-row {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .quick-edit-row input {
+    width: calc(33.33% - 4px);
+    padding: 8px 6px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--card);
+    color: var(--text);
+    font-size: 13px;
+    text-align: center;
+    outline: none;
+    font-family: 'SF Mono', 'JetBrains Mono', 'Menlo', monospace;
+  }
+  .quick-edit-row input:focus { border-color: var(--red); }
+
+  /* Settings buttons */
+  .settings-btn-row {
+    display: flex;
+    gap: 8px;
+  }
+  .settings-btn {
+    flex: 1;
+    padding: 10px 0;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--card);
+    color: var(--text);
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .settings-btn:active { background: #222; }
+  .settings-btn.danger {
+    border-color: rgba(255,94,94,0.3);
+    color: var(--red);
+  }
+  .settings-btn.danger:active { background: rgba(255,94,94,0.1); }
+
+  /* Reminder time select */
+  .time-select {
+    padding: 6px 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--card);
+    color: var(--text);
+    font-size: 13px;
+    outline: none;
+    cursor: pointer;
+  }
+
+  /* ── Quote Edit ── */
+  .quote-edit-list {
+    padding: 8px 0 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .quote-edit-item {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 12px;
+    background: var(--card);
+  }
+  .quote-edit-range {
+    font-size: 11px;
+    color: var(--sub);
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .quote-edit-range .dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--muted);
+    flex-shrink: 0;
+  }
+  .quote-edit-range .dot.hl { background: var(--gold); }
+  .quote-edit-item textarea {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 13px;
+    resize: none;
+    outline: none;
+    font-family: inherit;
+    line-height: 1.5;
+    height: 44px;
+  }
+  .quote-edit-item textarea:focus { border-color: var(--red); }
+  .quote-edit-item .hl-toggle-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 6px;
+  }
+  .quote-edit-item .hl-toggle-row span {
+    font-size: 11px;
+    color: var(--sub);
+  }
+  .toggle-sm {
+    position: relative;
+    width: 34px; height: 20px;
+    flex-shrink: 0;
+  }
+  .toggle-sm input { opacity: 0; width: 0; height: 0; }
+  .toggle-sm .slider-sm {
+    position: absolute;
+    inset: 0;
+    background: var(--border);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .toggle-sm .slider-sm::after {
+    content: '';
+    position: absolute;
+    top: 2px; left: 2px;
+    width: 16px; height: 16px;
+    background: #fff;
+    border-radius: 50%;
+    transition: transform 0.2s;
+  }
+  .toggle-sm input:checked + .slider-sm { background: var(--gold); }
+  .toggle-sm input:checked + .slider-sm::after { transform: translateX(14px); }
+
+  /* ── View Toggle ── */
+  .view { display: none; }
+  .view.active { display: block; }
+
+  /* ── Bookkeeping ── */
+  .book-month-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .book-month-header .month-label {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-bright);
+  }
+  .book-month-header .month-nav {
+    display: flex;
+    gap: 4px;
+  }
+  .month-nav-btn {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--card);
+    color: var(--sub);
+    font-size: 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+  }
+  .month-nav-btn:active { background: #222; }
+
+  .book-summary { margin-bottom: 20px; }
+
+  /* Ring Chart */
+  .book-ring-wrap {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 16px;
+  }
+  .book-ring {
+    position: relative;
+    width: 160px; height: 160px;
+  }
+  .book-ring svg { transform: rotate(-90deg); transform-origin: center center; }
+  .book-ring .ring-track {
+    fill: none;
+    stroke: var(--border);
+    stroke-width: 10;
+  }
+  .book-ring .ring-segment {
+    fill: none;
+    stroke-width: 10;
+    transition: stroke-dashoffset 0.5s, stroke-dasharray 0.5s;
+  }
+  .book-ring-center {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  .book-ring-center .ring-total {
+    font-size: 29px;
+    font-weight: 800;
+    color: var(--text-bright);
+    letter-spacing: -1px;
+    font-variant-numeric: tabular-nums;
+    font-family: 'SF Mono', 'JetBrains Mono', 'Menlo', monospace;
+  }
+  .book-ring-center .ring-lbl {
+    font-size: 11px;
+    color: var(--sub);
+    margin-top: 2px;
+  }
+
+  /* Legend */
+  .book-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 14px;
+    justify-content: center;
+    margin-bottom: 4px;
+  }
+  .book-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    color: var(--sub);
+  }
+  .book-legend-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  /* Income / Balance row */
+  .book-summary-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 12px;
+  }
+  .book-sum-card {
+    background: var(--card);
+    border-radius: 14px;
+    padding: 14px 10px;
+    text-align: center;
+    border: 1px solid var(--border);
+  }
+  .book-sum-card .val {
+    font-size: 20px;
+    font-weight: 700;
+  }
+  .book-sum-card .val.income { color: var(--green); }
+  .book-sum-card .val.balance { color: var(--text-bright); }
+  .book-sum-card .lbl {
+    font-size: 11px;
+    color: var(--sub);
+    margin-top: 2px;
+  }
+
+  /* Add transaction form */
+  .book-add-bar {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .book-add-bar input {
+    flex: 1;
+    padding: 12px 14px;
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    background: var(--card);
+    color: #fff;
+    font-size: 16px;
+    font-weight: 600;
+    outline: none;
+    font-family: 'SF Mono', 'JetBrains Mono', 'Menlo', monospace;
+    min-width: 0;
+  }
+  .book-add-bar input:focus { border-color: var(--red); }
+  .book-add-bar input::placeholder { color: #333; font-weight: 400; }
+  .book-add-bar select {
+    padding: 0 12px;
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    background: var(--card);
+    color: #fff;
+    font-size: 14px;
+    outline: none;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .btn-add-book {
+    padding: 12px 20px;
+    border: none;
+    border-radius: 12px;
+    background: var(--green);
+    color: #000;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.15s;
+  }
+  .btn-add-book:active { transform: scale(0.95); }
+
+  .book-type-toggle {
+    display: flex;
+    background: var(--card);
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    overflow: hidden;
+    margin-bottom: 14px;
+    flex-shrink: 0;
+  }
+  .type-btn {
+    flex: 1;
+    padding: 9px 12px;
+    border: none;
+    background: transparent;
+    color: var(--sub);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .type-btn.active-expense { background: var(--red); color: #fff; }
+  .type-btn.active-income { background: var(--green); color: #000; }
+
+  /* Category quick select */
+  .book-cats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .book-cat {
+    padding: 7px 14px;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    background: var(--card);
+    color: var(--sub);
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .book-cat.selected { border-color: var(--green); color: var(--green); background: rgba(74,222,128,0.08); }
+
+  /* Transaction list */
+  .book-tx-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-height: 320px;
+    overflow-y: auto;
+  }
+  .book-tx-list::-webkit-scrollbar { width: 3px; }
+  .book-tx-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .book-tx-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    background: var(--card);
+    border-radius: 10px;
+    border: 1px solid var(--border);
+  }
+  .book-tx-icon {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+    background: rgba(255,255,255,0.05);
+  }
+  .book-tx-info { flex: 1; min-width: 0; }
+  .book-tx-cat { font-size: 14px; color: var(--text); font-weight: 500; }
+  .book-tx-date { font-size: 11px; color: #4a4a4a; margin-top: 1px; }
+  .book-tx-amount {
+    font-size: 16px;
+    font-weight: 700;
+    text-align: right;
+    white-space: nowrap;
+  }
+  .book-tx-amount.in { color: var(--green); }
+  .book-tx-amount.out { color: var(--red); }
+  .book-tx-del {
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    font-size: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.15s;
+  }
+  .book-tx-del:hover { color: var(--red); border-color: var(--red); }
+
+  .book-empty {
+    text-align: center;
+    color: #2a2a2a;
+    font-size: 14px;
+    padding: 36px 0;
+  }
+
+  /* Bookkeeping filter row */
+  .book-filter-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .book-filter {
+    padding: 6px 14px;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    background: var(--card);
+    color: var(--sub);
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .book-filter.active { border-color: var(--red); color: var(--red); }
+
+  /* ── Responsive ── */
+  @media (max-width: 380px) {
+    .debt-number { font-size: 24px; }
+    .debt-circle { width: 136px; height: 136px; }
+    .input-row input { font-size: 17px; }
+    .btn-pay { padding: 14px 20px; font-size: 15px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- Header -->
+  <div class="header">
+    <button class="gear-btn" id="gearBtn" title="设置">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+      </svg>
+    </button>
+    <div class="tab-nav" id="tabNav">
+      <button class="tab-btn active" data-view="debt">还款进度</button>
+      <button class="tab-btn" data-view="book">虚拟钱包</button>
+    </div>
+    <div class="streak-badge" id="streakBadge">
+      <span class="fire">🔥</span>
+      <span id="streakCount">0</span> 天
+    </div>
+  </div>
+
+  <!-- Debt View -->
+  <div class="view active" id="debtView">
+
+  <!-- Debt Circle -->
+  <div class="debt-circle-wrap">
+    <div class="debt-circle">
+      <svg viewBox="0 0 160 160" width="160" height="160">
+        <circle class="track" cx="80" cy="80" r="72"/>
+        <circle class="fill" id="circleFill" cx="80" cy="80" r="72"
+          stroke-dasharray="452.39"
+          stroke-dashoffset="0"/>
+      </svg>
+      <div class="debt-circle-inner">
+        <div class="debt-number" id="debtNumber">100,000</div>
+        <div class="debt-sub">剩余欠款</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-value green" id="statPaid">¥0</div>
+      <div class="stat-label">已还金额</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" id="statPercent">0%</div>
+      <div class="stat-label">还款进度</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value gold" id="statDays">—</div>
+      <div class="stat-label">预计还清</div>
+    </div>
+  </div>
+
+  <!-- Quote -->
+  <div class="quote-box" id="quoteBox">
+    <div class="quote-text" id="quoteText">每一笔还款，都是在为自己存钱</div>
+  </div>
+
+  <!-- Input -->
+  <div class="input-row">
+    <input type="number" id="amountInput" placeholder="输入还款金额" min="1" inputmode="decimal">
+    <button class="btn-pay" id="payBtn">还款</button>
+  </div>
+
+  <!-- Quick amounts -->
+  <div class="quick-row">
+    <button class="quick-btn" data-amount="100">¥100</button>
+    <button class="quick-btn" data-amount="500">¥500</button>
+    <button class="quick-btn" data-amount="1000">¥1,000</button>
+    <button class="quick-btn" data-amount="3000">¥3,000</button>
+    <button class="quick-btn" data-amount="10000">¥10,000</button>
+  </div>
+
+  <!-- History -->
+  <div class="section-head">
+    <h2>还款记录</h2>
+    <span class="count" id="historyCount">0 笔</span>
+  </div>
+  <div class="history-list" id="historyList">
+    <div class="empty-history">还没有还款记录，开始存钱吧</div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <button class="reset-link" id="resetBtn">重新开始</button>
+  </div>
+  </div><!-- /debtView -->
+
+  <!-- Bookkeeping View -->
+  <div class="view" id="bookView">
+    <!-- Month Header -->
+    <div class="book-month-header">
+      <span class="month-label" id="bookMonthLabel">2026年6月</span>
+      <div class="month-nav">
+        <button class="month-nav-btn" id="bookPrevMonth">◀</button>
+        <button class="month-nav-btn" id="bookNextMonth">▶</button>
+        <button class="gear-btn" id="bookGearBtn" title="记账设置" style="margin-left:4px;">⚙</button>
+      </div>
+    </div>
+
+    <!-- Summary Ring -->
+    <div class="book-summary">
+      <div class="book-ring-wrap">
+        <div class="book-ring">
+          <svg viewBox="0 0 160 160" width="160" height="160" id="bookRingSvg">
+            <circle class="ring-track" cx="80" cy="80" r="72"/>
+          </svg>
+          <div class="book-ring-center">
+            <div class="ring-total" id="ringTotal">¥0</div>
+            <div class="ring-lbl">本月支出</div>
+          </div>
+        </div>
+      </div>
+      <div class="book-legend" id="bookLegend"></div>
+      <div class="book-summary-row">
+        <div class="book-sum-card">
+          <div class="val income" id="bookSumIncome">¥0</div>
+          <div class="lbl">本月收入</div>
+        </div>
+        <div class="book-sum-card">
+          <div class="val balance" id="bookSumBalance">¥0</div>
+          <div class="lbl">本月结余</div>
+        </div>
+    </div>
+    </div>
+
+    <!-- Budget Bar (visible when budget is set) -->
+    <div id="bookBudgetBar" style="display:none;margin-bottom:16px;background:var(--card);border-radius:12px;padding:12px 14px;border:1px solid var(--border);">
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px;font-size:12px;">
+        <span style="color:var(--sub);">预算</span>
+        <span id="bookBudgetBarText" style="color:var(--sub);">¥0 / ¥0</span>
+      </div>
+      <div style="height:6px;background:var(--border);border-radius:3px;overflow:hidden;">
+        <div id="bookBudgetBarFill" style="height:100%;border-radius:3px;transition:width 0.4s;width:0;background:var(--green);"></div>
+      </div>
+    </div>
+
+    <!-- Type Toggle -->
+    <div class="book-type-toggle" id="bookTypeToggle">
+      <button class="type-btn active-expense" data-type="expense">支出</button>
+      <button class="type-btn" data-type="income">收入</button>
+    </div>
+
+    <!-- Category Select -->
+    <div class="book-cats" id="bookCats">
+      <!-- filled by JS -->
+    </div>
+
+    <!-- Add Form -->
+    <div class="book-add-bar">
+      <input type="number" id="bookAmountInput" placeholder="金额" min="0.01" step="0.01" inputmode="decimal">
+      <button class="btn-add-book" id="btnAddBook">记一笔</button>
+    </div>
+
+    <!-- Filters -->
+    <div class="book-filter-row">
+      <button class="book-filter active" data-filter="all">全部</button>
+      <button class="book-filter" data-filter="expense">支出</button>
+      <button class="book-filter" data-filter="income">收入</button>
+    </div>
+
+    <!-- Transaction List -->
+    <div class="book-tx-list" id="bookTxList">
+      <div class="book-empty">暂无记录，开始记账吧</div>
+    </div>
+  </div><!-- /bookView -->
+
+</div><!-- /app -->
+
+<!-- Settings Overlay -->
+<div class="settings-overlay" id="settingsOverlay"></div>
+
+<!-- Settings Panel -->
+<div class="settings-panel" id="settingsPanel">
+  <div class="settings-header">
+    <h2 id="settingsTitle">设置</h2>
+    <button class="settings-close" id="settingsClose">✕</button>
+  </div>
+  <div class="settings-body">
+    <!-- 基本设置 -->
+    <div class="settings-group" data-show="debt">
+      <div class="settings-group-title">基本设置</div>
+      <div class="setting-item">
+        <div>
+          <div class="setting-label">目标欠款金额</div>
+          <div class="setting-desc">初始欠款总额</div>
+        </div>
+        <input type="number" class="setting-input" id="setTarget" min="1" step="1000" inputmode="numeric">
+      </div>
+      <div class="setting-item">
+        <div>
+          <div class="setting-label">音效</div>
+          <div class="setting-desc">还款和按钮点击音效</div>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="setSound">
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div class="setting-item">
+        <div>
+          <div class="setting-label">浅色主题</div>
+          <div class="setting-desc">切换为浅色模式</div>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="setLight">
+          <span class="slider"></span>
+        </label>
+      </div>
+    </div>
+
+    <!-- 激励语 -->
+    <div class="settings-group" data-show="debt">
+      <div class="settings-group-title">激励语</div>
+      <div class="setting-item">
+        <div>
+          <div class="setting-label">自定义激励语</div>
+          <div class="setting-desc">修改不同进度下的鼓励文案</div>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="setCustomQuotes">
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div class="quote-edit-list" id="quoteEditList">
+        <!-- filled by JS -->
+      </div>
+    </div>
+
+    <!-- 快捷金额 -->
+    <div class="settings-group" data-show="debt">
+      <div class="settings-group-title">快捷金额</div>
+      <div class="setting-item" style="flex-direction:column;align-items:stretch;gap:8px;">
+        <div class="setting-desc" style="margin-bottom:4px;">设置 5 个快捷还款按钮的金额</div>
+        <div class="quick-edit-row" id="quickEditRow">
+          <input type="number" data-idx="0" min="1" step="100" inputmode="numeric">
+          <input type="number" data-idx="1" min="1" step="100" inputmode="numeric">
+          <input type="number" data-idx="2" min="1" step="100" inputmode="numeric">
+          <input type="number" data-idx="3" min="1" step="100" inputmode="numeric">
+          <input type="number" data-idx="4" min="1" step="100" inputmode="numeric">
+        </div>
+      </div>
+    </div>
+
+    <!-- 每日提醒 -->
+    <div class="settings-group" data-show="debt">
+      <div class="settings-group-title">每日提醒</div>
+      <div class="setting-item">
+        <div>
+          <div class="setting-label">每日还款提醒</div>
+          <div class="setting-desc">浏览器推送通知</div>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="setReminder">
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div class="setting-item" id="reminderTimeRow">
+        <div class="setting-label">提醒时间</div>
+        <select class="time-select" id="setReminderTime">
+          <option value="8">08:00</option>
+          <option value="9">09:00</option>
+          <option value="10">10:00</option>
+          <option value="12">12:00</option>
+          <option value="18">18:00</option>
+          <option value="20">20:00</option>
+          <option value="21">21:00</option>
+          <option value="22">22:00</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- 记账设置 -->
+    <div class="settings-group" data-show="book">
+      <div class="settings-group-title">记账设置</div>
+      <div class="setting-item">
+        <div>
+          <div class="setting-label">初始存款</div>
+          <div class="setting-desc">记账前的储蓄基数，后续自动联动</div>
+        </div>
+        <input type="number" class="setting-input" id="setBookSavings" min="0" step="100" inputmode="numeric" placeholder="0">
+      </div>
+      <div class="setting-item">
+        <div>
+          <div class="setting-label">月度预算</div>
+          <div class="setting-desc">设为 0 则不设预算上限</div>
+        </div>
+        <input type="number" class="setting-input" id="setBookBudget" min="0" step="100" inputmode="numeric" placeholder="0">
+      </div>
+      <div class="setting-item">
+        <div>
+          <div class="setting-label">超支提醒</div>
+          <div class="setting-desc">支出超过预算时高亮提示</div>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="setBookBudgetWarn">
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div class="setting-item" id="bookBudgetInfo" style="display:none;">
+        <div style="width:100%;">
+          <div class="setting-desc" style="margin-bottom:6px;">本月预算使用情况</div>
+          <div style="height:6px;background:var(--border);border-radius:3px;overflow:hidden;">
+            <div id="budgetBar" style="height:100%;background:var(--green);border-radius:3px;transition:width 0.4s;width:0;"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-top:4px;font-size:11px;color:var(--sub);">
+            <span id="budgetUsed">¥0 已用</span>
+            <span id="budgetRemain">¥0 剩余</span>
+          </div>
+        </div>
+      </div>
+      <div class="settings-btn-row" style="margin-top:8px;">
+        <button class="settings-btn" id="btnExportBook">导出记账数据</button>
+        <button class="settings-btn danger" id="btnClearBook">清除记账数据</button>
+      </div>
+    </div>
+
+    <!-- 数据管理 -->
+    <div class="settings-group" data-show="debt">
+      <div class="settings-group-title">数据管理</div>
+      <div class="settings-btn-row" style="margin-bottom: 8px;">
+        <button class="settings-btn" id="btnExport">导出数据</button>
+        <button class="settings-btn" id="btnImport">导入数据</button>
+      </div>
+      <button class="settings-btn danger" id="btnClearAll" style="width:100%;">清除全部数据</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- Milestone Overlay -->
+<div class="milestone-overlay" id="milestoneOverlay">
+  <div class="milestone-card">
+    <div class="milestone-emoji" id="milestoneEmoji"></div>
+    <div class="milestone-title" id="milestoneTitle"></div>
+    <div class="milestone-sub" id="milestoneSub"></div>
+    <button class="milestone-btn" id="milestoneBtn">继续努力</button>
+  </div>
+</div>
+
+<!-- Confetti container -->
+<div class="confetti" id="confetti"></div>
+
+<script>
+const CIRCUMFERENCE = 2 * Math.PI * 72; // r=72 → ~452.39
+
+// Settings defaults
+const DEFAULT_SETTINGS = {
+  target: 100000,
+  sound: true,
+  light: false,
+  quickAmounts: [100, 500, 1000, 3000, 10000],
+  reminder: false,
+  reminderTime: 20,
+  bookBudget: 0,
+  bookBudgetWarn: true,
+  bookSavings: 0,
+  customQuotes: false,
+  quotesData: [
+    { text: '千里之行，始于足下。开始就是成功的一半。', highlight: false },
+    { text: '每一小步，都在靠近自由。继续保持！', highlight: false },
+    { text: '四分之一已经完成，你没有放弃，真了不起。', highlight: true },
+    { text: '过半了！现在的你，已经战胜了拖延的自己。', highlight: true },
+    { text: '胜利在望，还差最后一段路。坚持住！', highlight: true },
+    { text: '马上就要自由了，现在的你比任何时候都强大。', highlight: true },
+    { text: '你自由了。一分不欠，全是存款。', highlight: true },
+  ],
+};
+
+let settings = JSON.parse(localStorage.getItem('debt2_settings') || 'null') || { ...DEFAULT_SETTINGS };
+// Upgrade old stored settings with any missing keys
+let needsSave = false;
+for (const [k, v] of Object.entries(DEFAULT_SETTINGS)) {
+  if (!(k in settings)) { settings[k] = v; needsSave = true; }
+}
+if (needsSave) saveSettings();
+
+function saveSettings() {
+  localStorage.setItem('debt2_settings', JSON.stringify(settings));
+}
+
+// State
+let TOTAL = settings.target;
+let remaining, history, streak;
+
+function loadState() {
+  history = JSON.parse(localStorage.getItem('debt2_history') || '[]');
+  if (history.length > 0) {
+    remaining = history[history.length - 1].remaining;
+    // If target changed, adjust remaining proportionally
+    const oldTotal = history[0].remaining + history[0].amount;
+    if (oldTotal !== TOTAL) {
+      const paidRatio = (oldTotal - remaining) / oldTotal;
+      remaining = Math.round(TOTAL * (1 - paidRatio));
+      // Rebuild history with new total
+      let running = TOTAL;
+      for (let i = history.length - 1; i >= 0; i--) {
+        history[i].remaining = running;
+        running += history[i].amount;
+      }
+      if (history.length > 0) {
+        history[0].remaining = Math.max(0, Math.round(TOTAL - (oldTotal - history[0].remaining)));
+      }
+    }
+  } else {
+    remaining = TOTAL;
+  }
+  streak = JSON.parse(localStorage.getItem('debt2_streak') || '{"count":0,"lastDate":null}');
+}
+loadState();
+
+// DOM refs
+const $ = id => document.getElementById(id);
+const debtNumber = $('debtNumber');
+const circleFill = $('circleFill');
+const statPaid = $('statPaid');
+const statPercent = $('statPercent');
+const statDays = $('statDays');
+const quoteText = $('quoteText');
+const quoteBox = $('quoteBox');
+const amountInput = $('amountInput');
+const payBtn = $('payBtn');
+const historyList = $('historyList');
+const historyCount = $('historyCount');
+const streakBadge = $('streakBadge');
+const streakCountEl = $('streakCount');
+const toast = $('toast');
+const milestoneOverlay = $('milestoneOverlay');
+const milestoneEmoji = $('milestoneEmoji');
+const milestoneTitle = $('milestoneTitle');
+const milestoneSub = $('milestoneSub');
+const milestoneBtn = $('milestoneBtn');
+const confetti = $('confetti');
+
+// Audio context for simple beeps
+let audioCtx;
+function getAudioCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+function beep(freq, duration, type = 'sine', vol = 0.08) {
+  try {
+    const ctx = getAudioCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = type;
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(vol, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + duration);
+  } catch(e) { /* ignore */ }
+}
+function sfxClick() { beep(800, 0.08, 'sine', 0.04); }
+function sfxPay() { beep(600, 0.12, 'triangle', 0.06); }
+function sfxMilestone() {
+  beep(523, 0.1, 'sine', 0.07);
+  setTimeout(() => beep(659, 0.1, 'sine', 0.07), 100);
+  setTimeout(() => beep(784, 0.15, 'sine', 0.07), 200);
+}
+
+// Formatting
+function fmt(n) { return n.toLocaleString('zh-CN'); }
+function fmtMoney(n) { return '¥' + fmt(n); }
+
+// Streak
+function updateStreak() {
+  const today = new Date().toISOString().slice(0, 10);
+  if (streak.lastDate === today) return;
+  const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+  if (streak.lastDate === yesterday) {
+    streak.count += 1;
+  } else if (streak.lastDate !== today) {
+    streak.count = 1;
+  }
+  streak.lastDate = today;
+  localStorage.setItem('debt2_streak', JSON.stringify(streak));
+  streakCountEl.textContent = streak.count;
+}
+
+// UI update
+let animFrame;
+function animateNumber(el, from, to) {
+  const duration = 400;
+  const start = performance.now();
+  cancelAnimationFrame(animFrame);
+  function tick(now) {
+    const p = Math.min((now - start) / duration, 1);
+    const eased = 1 - Math.pow(1 - p, 3); // ease-out
+    const val = Math.round(from + (to - from) * eased);
+    el.textContent = fmt(val);
+    if (p < 1) animFrame = requestAnimationFrame(tick);
+  }
+  animFrame = requestAnimationFrame(tick);
+}
+
+function getEstimatedDays() {
+  if (history.length < 2 || remaining <= 0) return null;
+  const sorted = [...history].sort((a, b) => a.ts - b.ts);
+  const first = sorted[0].ts;
+  const last = sorted[sorted.length - 1].ts;
+  const spanDays = (last - first) / 86400000;
+  if (spanDays < 0.5) return null;
+  const totalPaid = TOTAL - remaining;
+  const dailyAvg = totalPaid / spanDays;
+  if (dailyAvg <= 0) return null;
+  return Math.ceil(remaining / dailyAvg);
+}
+
+function updateUI(animate = true) {
+  const paid = TOTAL - remaining;
+  const pct = paid / TOTAL;
+  const pctInt = Math.round(pct * 100);
+  const offset = CIRCUMFERENCE * (1 - pct);
+
+  if (animate) {
+    const prev = parseInt(debtNumber.textContent.replace(/,/g, ''), 10) || TOTAL;
+    animateNumber(debtNumber, prev, remaining);
+  } else {
+    debtNumber.textContent = fmt(remaining);
+  }
+
+  circleFill.style.strokeDashoffset = offset;
+  statPaid.textContent = fmtMoney(paid);
+  statPercent.textContent = pctInt + '%';
+
+  const est = getEstimatedDays();
+  statDays.textContent = est ? '约 ' + est + ' 天' : remaining <= 0 ? '已完成' : '—';
+
+  // Color transitions
+  const isCleared = remaining <= 0;
+  debtNumber.classList.toggle('cleared', isCleared);
+  circleFill.classList.toggle('cleared', isCleared);
+
+  if (isCleared) {
+    payBtn.disabled = true;
+    amountInput.disabled = true;
+  } else {
+    payBtn.disabled = false;
+    amountInput.disabled = false;
+  }
+
+  // Quote
+  updateQuote(pctInt);
+
+  // Milestone triggers
+  checkMilestone(pctInt);
+}
+
+const QUOTE_RANGES = [
+  { min: 0, max: 9 },
+  { min: 10, max: 24 },
+  { min: 25, max: 49 },
+  { min: 50, max: 74 },
+  { min: 75, max: 89 },
+  { min: 90, max: 99 },
+  { min: 100, max: 100 },
+];
+
+function buildQuotes() {
+  return QUOTE_RANGES.map((r, i) => ({
+    ...r,
+    text: settings.quotesData[i]?.text || '',
+    highlight: settings.quotesData[i]?.highlight || false,
+  }));
+}
+
+let quotes = buildQuotes();
+
+function updateQuote(pct) {
+  const q = quotes.find(q => pct >= q.min && pct <= q.max) || quotes[0];
+  quoteText.textContent = q.text;
+  quoteBox.classList.toggle('highlight', q.highlight);
+}
+
+function rebuildQuotes() {
+  quotes = buildQuotes();
+  const pct = remaining >= TOTAL ? 0 : Math.round(((TOTAL - remaining) / TOTAL) * 100);
+  updateQuote(pct);
+}
+
+// Milestones
+const milestones = [25, 50, 75, 90, 100];
+let triggeredMilestones = new Set(
+  JSON.parse(localStorage.getItem('debt2_milestones') || '[]')
+);
+
+const milestoneData = {
+  25: { emoji: '🎯', title: '25% 达成！', sub: '你已还清四分之一的欠款，\n这个习惯正在改变你。' },
+  50: { emoji: '🔥', title: '过半了！', sub: '五万已清，五万待还。\n你的坚持已经超越了大多数人。' },
+  75: { emoji: '💪', title: '75% 达成！', sub: '只剩最后四分之一，\n你比自己想象的更有力量。' },
+  90: { emoji: '🚀', title: '即将完成！', sub: '90% 了！自由近在眼前，\n最后一鼓作气冲过去。' },
+  100: { emoji: '🎉', title: '全部还清！', sub: '你做到了。100,000 欠款归零。\n从现在开始，每一分钱都是存款。' },
+};
+
+function checkMilestone(pct) {
+  for (const m of milestones) {
+    if (pct >= m && !triggeredMilestones.has(m)) {
+      triggeredMilestones.add(m);
+      localStorage.setItem('debt2_milestones', JSON.stringify([...triggeredMilestones]));
+      showMilestone(m);
+      break;
+    }
+  }
+}
+
+function showMilestone(m) {
+  const d = milestoneData[m];
+  milestoneEmoji.textContent = d.emoji;
+  milestoneTitle.textContent = d.title;
+  milestoneSub.textContent = d.sub;
+  milestoneOverlay.classList.add('show');
+  sfxMilestone();
+  if (m >= 50) spawnConfetti(m === 100 ? 120 : 60);
+}
+
+milestoneBtn.addEventListener('click', () => {
+  milestoneOverlay.classList.remove('show');
+});
+
+milestoneOverlay.addEventListener('click', (e) => {
+  if (e.target === milestoneOverlay) milestoneOverlay.classList.remove('show');
+});
+
+// Toast
+let toastTimer;
+function showToast(msg) {
+  toast.textContent = msg;
+  toast.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toast.classList.remove('show'), 1800);
+}
+
+// Confetti
+function spawnConfetti(count = 80) {
+  const colors = ['#ff5e5e','#ff922b','#ffd43b','#4ade80','#60a5fa','#c084fc','#f472b6'];
+  const frag = document.createDocumentFragment();
+  for (let i = 0; i < count; i++) {
+    const piece = document.createElement('div');
+    piece.className = 'confetti-piece';
+    piece.style.left = Math.random() * 100 + '%';
+    piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+    piece.style.width = (Math.random() * 8 + 4) + 'px';
+    piece.style.height = (Math.random() * 8 + 4) + 'px';
+    piece.style.animationDuration = (Math.random() * 2 + 2.5) + 's';
+    piece.style.animationDelay = Math.random() * 0.6 + 's';
+    frag.appendChild(piece);
+  }
+  confetti.innerHTML = '';
+  confetti.appendChild(frag);
+  setTimeout(() => { confetti.innerHTML = ''; }, 3500);
+}
+
+// Render history
+function renderHistory() {
+  historyCount.textContent = history.length + ' 笔';
+  if (history.length === 0) {
+    historyList.innerHTML = '<div class="empty-history">还没有还款记录，开始存钱吧</div>';
+    return;
+  }
+  historyList.innerHTML = history.slice().reverse().map((h, idx) => {
+    const realIdx = history.length - 1 - idx;
+    return `
+    <div class="history-item" data-idx="${realIdx}">
+      <div class="ht-icon">💰</div>
+      <div class="ht-info">
+        <div class="ht-amount">还款 ${fmtMoney(h.amount)}</div>
+        <div class="ht-date">${h.date} · 剩余 ${fmtMoney(h.remaining)}</div>
+      </div>
+      <div class="ht-paid">-${fmtMoney(h.amount)}</div>
+      <button class="ht-del" data-idx="${realIdx}">✕</button>
+    </div>
+  `;}).join('');
+}
+
+// Pay action
+function pay(amount) {
+  if (amount <= 0 || remaining <= 0) return;
+  const actual = Math.min(Math.round(amount), remaining);
+  remaining -= actual;
+
+  const now = new Date();
+  const dateStr = now.getFullYear() + '-' +
+    String(now.getMonth()+1).padStart(2,'0') + '-' +
+    String(now.getDate()).padStart(2,'0') + ' ' +
+    String(now.getHours()).padStart(2,'0') + ':' +
+    String(now.getMinutes()).padStart(2,'0');
+  history.push({ amount: actual, remaining, date: dateStr, ts: now.getTime() });
+  saveHistory();
+  updateStreak();
+  updateUI();
+  renderHistory();
+  sfxPay();
+  showToast('已还款 ' + fmtMoney(actual) + ' ✓');
+
+  if (remaining <= 0) {
+    // full celebration handled by milestone
+  }
+}
+
+function saveHistory() {
+  localStorage.setItem('debt2_history', JSON.stringify(history));
+}
+
+// Event listeners
+payBtn.addEventListener('click', () => {
+  const val = parseFloat(amountInput.value);
+  if (isNaN(val) || val <= 0) return;
+  sfxClick();
+  pay(val);
+  amountInput.value = '';
+  amountInput.focus();
+});
+
+amountInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') payBtn.click();
+});
+
+document.querySelectorAll('.quick-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    sfxClick();
+    pay(parseFloat(btn.dataset.amount));
+  });
+});
+
+// Delete repayment record via × button
+historyList.addEventListener('click', (e) => {
+  if (e.target.classList.contains('ht-del')) {
+    const idx = parseInt(e.target.dataset.idx);
+    if (isNaN(idx)) return;
+    const removed = history.splice(idx, 1);
+    // Recalculate all remaining values from scratch
+    remaining = TOTAL;
+    for (let i = 0; i < history.length; i++) {
+      remaining -= history[i].amount;
+      history[i].remaining = remaining;
+    }
+    // Recalc milestones
+    triggeredMilestones = new Set();
+    for (const m of milestones) {
+      if (((TOTAL - remaining) / TOTAL) * 100 >= m) triggeredMilestones.add(m);
+    }
+    localStorage.setItem('debt2_milestones', JSON.stringify([...triggeredMilestones]));
+    saveHistory();
+    updateUI(false);
+    renderHistory();
+    showToast('已撤回还款 ' + fmtMoney(removed[0]?.amount || 0));
+  }
+});
+
+// Reset
+$('resetBtn').addEventListener('click', () => {
+  if (!confirm('确定要重新开始吗？所有还款记录将被清除。')) return;
+  remaining = TOTAL;
+  history = [];
+  triggeredMilestones = new Set();
+  localStorage.removeItem('debt2_history');
+  localStorage.removeItem('debt2_milestones');
+  saveHistory();
+  updateUI(false);
+  renderHistory();
+  confetti.innerHTML = '';
+  showToast('已重新开始');
+});
+
+// ─── Tab Switching ────────────────────────────────────────────
+const tabBtns = document.querySelectorAll('.tab-btn');
+const debtView = $('debtView');
+const bookView = $('bookView');
+
+tabBtns.forEach(btn => {
+  btn.addEventListener('click', () => {
+    tabBtns.forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const v = btn.dataset.view;
+    if (v === 'debt') {
+      debtView.classList.add('active');
+      bookView.classList.remove('active');
+    } else {
+      debtView.classList.remove('active');
+      bookView.classList.add('active');
+      renderBookkeeping();
+    }
+  });
+});
+
+// ─── Bookkeeping ──────────────────────────────────────────────
+const EXPENSE_CATS = [
+  { name: '吃饭', icon: '🍔' },
+  { name: '不要了', icon: '📌' },
+];
+const INCOME_CATS = [
+  { name: '当牛马', icon: '💰' },
+  { name: '捡钱', icon: '📌' },
+];
+
+let bookTx = JSON.parse(localStorage.getItem('debt2_book_tx') || '[]');
+let bookMonth = new Date().getFullYear() + '-' + String(new Date().getMonth()+1).padStart(2,'0');
+let bookType = 'expense'; // 'expense' | 'income'
+let bookCat = EXPENSE_CATS[0].name;
+let bookFilter = 'all';
+
+function saveBookTx() {
+  localStorage.setItem('debt2_book_tx', JSON.stringify(bookTx));
+}
+
+// DOM refs for bookkeeping
+const bookMonthLabel = $('bookMonthLabel');
+const bookSumIncome = $('bookSumIncome');
+const bookSumBalance = $('bookSumBalance');
+const bookTypeToggle = $('bookTypeToggle');
+
+const MONTH_NAMES = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+
+function fmtBookMonth(ym) {
+  const [y, m] = ym.split('-');
+  return y + '年' + MONTH_NAMES[parseInt(m)-1];
+}
+
+function getMonthTx() {
+  return bookTx.filter(t => t.month === bookMonth);
+}
+
+const RING_R = 72;
+const RING_CIRC = 2 * Math.PI * RING_R;
+const CAT_COLORS = {
+  '吃饭': '#ff6b6b', '不要了': '#868e96',
+  '当牛马': '#4ade80', '捡钱': '#a9e34b',
+};
+
+function drawFinanceRing(monthTx) {
+  // Calculate monthly totals
+  let income = 0, expense = 0;
+  monthTx.forEach(t => {
+    if (t.type === 'income') income += t.amount;
+    else expense += t.amount;
+  });
+  // Current savings = initial + all-time income - all-time expense (auto-linked)
+  const allTimeIncome = bookTx.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+  const allTimeExpense = bookTx.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+  const savings = (settings.bookSavings || 0) + allTimeIncome - allTimeExpense;
+
+// Build three segments: savings (white), income (green), expense (red)
+  const savingsColor = getComputedStyle(document.body).getPropertyValue('--text-bright').trim() || '#ffffff';
+  const segments = [
+    { label: '存款', amount: savings, color: savingsColor },
+    { label: '收入', amount: income, color: '#4ade80' },
+    { label: '支出', amount: expense, color: '#ff5e5e' },
+  ].filter(s => s.amount > 0);
+  ringTotal.textContent = '¥' + savings.toLocaleString('zh-CN');
+
+  // Update ring center label
+  const ringLbl = document.querySelector('.book-ring-center .ring-lbl');
+  if (ringLbl) ringLbl.textContent = savings > 0 || income > 0 ? '当前存款' : '暂无数据';
+
+  // Remove old segments
+  bookRingSvg.querySelectorAll('.ring-segment').forEach(el => el.remove());
+
+  if (segments.length === 0) {
+    bookLegend.innerHTML = '<span style="font-size:12px;color:var(--muted);">暂无财务数据</span>';
+    return;
+  }
+
+  const totalRing = segments.reduce((sum, s) => sum + s.amount, 0);
+
+  // Draw segments
+  let offset = 0;
+  segments.forEach(seg => {
+    const pct = seg.amount / totalRing;
+    const dashLen = RING_CIRC * pct;
+    const el = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    el.classList.add('ring-segment');
+    el.setAttribute('cx', '80');
+    el.setAttribute('cy', '80');
+    el.setAttribute('r', String(RING_R));
+    el.setAttribute('stroke', seg.color);
+    el.setAttribute('stroke-dasharray', dashLen + ' ' + (RING_CIRC - dashLen));
+    el.setAttribute('stroke-dashoffset', String(-offset));
+    el.setAttribute('stroke-linecap', pct > 0.05 ? 'round' : 'butt');
+    bookRingSvg.appendChild(el);
+    offset += dashLen;
+  });
+
+  // Legend
+  bookLegend.innerHTML = segments.map(s => {
+    const pct = Math.round((s.amount / totalRing) * 100);
+    return `
+      <div class="book-legend-item">
+        <span class="book-legend-dot" style="background:${s.color}"></span>
+        ${s.label} ¥${s.amount.toLocaleString('zh-CN')} · ${pct}%
+      </div>`;
+  }).join('');
+}
+
+function renderBookkeeping() {
+  const ym = bookMonth;
+  bookMonthLabel.textContent = fmtBookMonth(ym);
+
+  const monthTx = getMonthTx();
+  let income = 0, expense = 0;
+  monthTx.forEach(t => {
+    if (t.type === 'income') income += t.amount;
+    else expense += t.amount;
+  });
+  bookSumIncome.textContent = '¥' + income.toLocaleString('zh-CN');
+  const bal = income - expense;
+  bookSumBalance.textContent = (bal >= 0 ? '¥' : '-¥') + Math.abs(bal).toLocaleString('zh-CN');
+  // Categories
+  const cats = bookType === 'expense' ? EXPENSE_CATS : INCOME_CATS;
+  bookCats.innerHTML = cats.map(c => `
+    <button class="book-cat${bookCat === c.name ? ' selected' : ''}" data-cat="${c.name}">${c.icon} ${c.name}</button>
+  `).join('');
+  bookCats.querySelectorAll('.book-cat').forEach(btn => {
+    btn.addEventListener('click', () => {
+      bookCat = btn.dataset.cat;
+      bookCats.querySelectorAll('.book-cat').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+    });
+  });
+
+  // Type toggle buttons
+  bookTypeToggle.querySelectorAll('.type-btn').forEach(btn => {
+    btn.classList.remove('active-expense', 'active-income');
+    if (btn.dataset.type === bookType) {
+      btn.classList.add(bookType === 'expense' ? 'active-expense' : 'active-income');
+    }
+  });
+
+  // Transaction list
+  let filtered = monthTx;
+  if (bookFilter !== 'all') {
+    filtered = filtered.filter(t => t.type === bookFilter);
+  }
+  filtered.sort((a, b) => b.ts - a.ts);
+
+  if (filtered.length === 0) {
+    bookTxList.innerHTML = '<div class="book-empty">暂无记录</div>';
+  } else {
+    bookTxList.innerHTML = filtered.map((t, i) => {
+      const idx = bookTx.indexOf(t);
+      const catInfo = (t.type === 'expense' ? EXPENSE_CATS : INCOME_CATS).find(c => c.name === t.cat);
+      return `
+        <div class="book-tx-item">
+          <div class="book-tx-icon">${catInfo?.icon || '📌'}</div>
+          <div class="book-tx-info">
+            <div class="book-tx-cat">${t.cat}</div>
+            <div class="book-tx-date">${t.dateStr}</div>
+          </div>
+          <div class="book-tx-amount ${t.type === 'income' ? 'in' : 'out'}">
+            ${t.type === 'income' ? '+' : '-'}¥${t.amount.toLocaleString('zh-CN')}
+          </div>
+          <button class="book-tx-del" data-idx="${idx}">✕</button>
+        </div>
+      `;
+    }).join('');
+  }
+}
+
+// Type toggle
+bookTypeToggle.addEventListener('click', (e) => {
+  const btn = e.target.closest('.type-btn');
+  if (!btn) return;
+  bookType = btn.dataset.type;
+  bookCat = (bookType === 'expense' ? EXPENSE_CATS : INCOME_CATS)[0].name;
+  renderBookkeeping();
+});
+
+// Add transaction
+btnAddBook.addEventListener('click', () => {
+  const val = parseFloat(bookAmountInput.value);
+  if (isNaN(val) || val <= 0) return;
+  const now = new Date();
+  const ym = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
+  const dateStr = String(now.getMonth()+1).padStart(2,'0') + '/' + String(now.getDate()).padStart(2,'0') + ' ' +
+    String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+  bookTx.push({
+    type: bookType,
+    cat: bookCat,
+    amount: Math.round(val * 100) / 100,
+    month: ym,
+    dateStr,
+    ts: now.getTime(),
+  });
+  saveBookTx();
+  // Auto-switch to current month if needed
+  if (ym !== bookMonth) {
+    bookMonth = ym;
+  }
+  bookAmountInput.value = '';
+  renderBookkeeping();
+  if (settings.sound) beep(900, 0.1, 'sine', 0.05);
+});
+
+bookAmountInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') btnAddBook.click();
+});
+
+// Month navigation
+$('bookPrevMonth').addEventListener('click', () => {
+  const [y, m] = bookMonth.split('-').map(Number);
+  const d = new Date(y, m - 2, 1);
+  bookMonth = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+  renderBookkeeping();
+});
+$('bookNextMonth').addEventListener('click', () => {
+  const [y, m] = bookMonth.split('-').map(Number);
+  const d = new Date(y, m, 1);
+  bookMonth = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+  renderBookkeeping();
+});
+
+// Filters
+document.querySelector('.book-filter-row').addEventListener('click', (e) => {
+  const btn = e.target.closest('.book-filter');
+  if (!btn) return;
+  bookFilter = btn.dataset.filter;
+  document.querySelectorAll('.book-filter').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderBookkeeping();
+});
+
+// Delete transaction
+bookTxList.addEventListener('click', (e) => {
+  if (e.target.classList.contains('book-tx-del')) {
+    const idx = parseInt(e.target.dataset.idx);
+    bookTx.splice(idx, 1);
+    saveBookTx();
+    renderBookkeeping();
+  }
+});
+
+// ─── Settings Panel ──────────────────────────────────────────
+const settingsOverlay = $('settingsOverlay');
+const settingsPanel = $('settingsPanel');
+const gearBtn = $('gearBtn');
+const settingsClose = $('settingsClose');
+
+// DOM refs for settings
+const setTarget = $('setTarget');
+const setSound = $('setSound');
+const setLight = $('setLight');
+const setReminder = $('setReminder');
+const setReminderTime = $('setReminderTime');
+const quickEditRow = $('quickEditRow');
+const quickInputs = quickEditRow.querySelectorAll('input');
+const setCustomQuotes = $('setCustomQuotes');
+const quoteEditList = $('quoteEditList');
+const setBookBudget = $('setBookBudget');
+const setBookBudgetWarn = $('setBookBudgetWarn');
+const setBookSavings = $('setBookSavings');
+const bookBudgetInfo = $('bookBudgetInfo');
+const budgetBar = $('budgetBar');
+const budgetUsed = $('budgetUsed');
+const budgetRemain = $('budgetRemain');
+
+const RANGE_LABELS = [
+  '0% – 9% 起步阶段',
+  '10% – 24% 初有成效',
+  '25% – 49% 稳步前行',
+  '50% – 74% 已经过半',
+  '75% – 89% 胜利在望',
+  '90% – 99% 即将完成',
+  '100% 全部还清',
+];
+
+function renderQuoteEditList() {
+  quoteEditList.innerHTML = settings.quotesData.map((q, i) => `
+    <div class="quote-edit-item">
+      <div class="quote-edit-range">
+        <span class="dot${q.highlight ? ' hl' : ''}"></span>
+        ${RANGE_LABELS[i]}
+      </div>
+      <textarea data-qidx="${i}" rows="2">${q.text.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</textarea>
+      <div class="hl-toggle-row">
+        <label class="toggle-sm">
+          <input type="checkbox" data-qhl="${i}" ${q.highlight ? 'checked' : ''}>
+          <span class="slider-sm"></span>
+        </label>
+        <span>金色高亮</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+function collectQuotesData() {
+  const texts = quoteEditList.querySelectorAll('textarea');
+  const hls = quoteEditList.querySelectorAll('input[data-qhl]');
+  return [...texts].map((ta, i) => ({
+    text: ta.value.trim() || settings.quotesData[i]?.text || '',
+    highlight: hls[i]?.checked || false,
+  }));
+}
+
+let settingsContext = 'debt';
+
+function openSettings(ctx) {
+  settingsContext = ctx || 'debt';
+  $('settingsTitle').textContent = settingsContext === 'debt' ? '还款设置' : '记账设置';
+  // Use CSS classes for filtering (more reliable than inline styles)
+  settingsPanel.classList.remove('ctx-debt', 'ctx-book');
+  settingsPanel.classList.add('ctx-' + settingsContext);
+  settingsPanel.classList.add('show');
+  settingsOverlay.classList.add('show');
+  populateSettings();
+}
+function closeSettings() {
+  settingsPanel.classList.remove('show');
+  settingsOverlay.classList.remove('show');
+}
+gearBtn.addEventListener('click', () => openSettings('debt'));
+$('bookGearBtn').addEventListener('click', () => openSettings('book'));
+settingsClose.addEventListener('click', closeSettings);
+settingsOverlay.addEventListener('click', closeSettings);
+
+function populateSettings() {
+  if (settingsContext === 'debt') {
+    setTarget.value = settings.target;
+    setSound.checked = settings.sound;
+    setLight.checked = settings.light;
+    setReminder.checked = settings.reminder;
+    setReminderTime.value = settings.reminderTime;
+    settings.quickAmounts.forEach((v, i) => {
+      if (quickInputs[i]) quickInputs[i].value = v;
+    });
+    setCustomQuotes.checked = settings.customQuotes;
+    renderQuoteEditList();
+    quoteEditList.style.display = settings.customQuotes ? 'flex' : 'none';
+  }
+  if (settingsContext === 'book') {
+    setBookSavings.value = settings.bookSavings || '';
+    setBookBudget.value = settings.bookBudget || '';
+    setBookBudgetWarn.checked = settings.bookBudgetWarn;
+    updateBudgetBar();
+  }
+}
+
+// Apply settings
+function applySettings() {
+  const newTarget = Math.max(1, parseInt(setTarget.value, 10) || settings.target);
+  const oldTarget = TOTAL;
+
+  settings.target = newTarget;
+  settings.sound = setSound.checked;
+  settings.light = setLight.checked;
+  settings.quickAmounts = [...quickInputs].map(inp => Math.max(1, parseInt(inp.value, 10) || 100));
+  settings.reminder = setReminder.checked;
+  settings.reminderTime = parseInt(setReminderTime.value, 10);
+  settings.customQuotes = setCustomQuotes.checked;
+  quoteEditList.style.display = settings.customQuotes ? 'flex' : 'none';
+  if (settings.customQuotes) {
+    settings.quotesData = collectQuotesData();
+  }
+  settings.bookSavings = Math.max(0, parseInt(setBookSavings.value, 10) || 0);
+  settings.bookBudget = Math.max(0, parseInt(setBookBudget.value, 10) || 0);
+  settings.bookBudgetWarn = setBookBudgetWarn.checked;
+  updateBudgetBar();
+  saveSettings();
+
+  // Light theme
+  document.body.classList.toggle('light', settings.light);
+
+  // Target changed → rebuild
+  if (newTarget !== oldTarget) {
+    const paidRatio = (oldTarget - remaining) / oldTarget;
+    TOTAL = newTarget;
+    remaining = Math.round(TOTAL * (1 - paidRatio));
+    // Rebuild history
+    if (history.length > 0) {
+      let running = remaining;
+      for (let i = history.length - 1; i >= 1; i--) {
+        running += history[i].amount;
+        history[i].remaining = running;
+      }
+      history[0].remaining = running + history[0].amount;
+    }
+    // Recalc milestones
+    triggeredMilestones = new Set();
+    for (const m of milestones) {
+      if ((TOTAL - remaining) / TOTAL * 100 >= m) triggeredMilestones.add(m);
+    }
+    localStorage.setItem('debt2_milestones', JSON.stringify([...triggeredMilestones]));
+    saveHistory();
+  }
+
+  // Quick buttons
+  renderQuickBtns();
+
+  // Reminder
+  if (settings.reminder) {
+    requestNotificationPermission();
+    scheduleReminder();
+  } else {
+    clearReminder();
+  }
+
+  updateUI(false);
+  renderHistory();
+  rebuildQuotes();
+  // Refresh bookkeeping ring if bookkeeping view is active
+  if (bookView.classList.contains('active')) {
+    renderBookkeeping();
+  }
+}
+
+// Auto-save on input changes
+[setTarget, setSound, setLight, setReminder, setReminderTime].forEach(el => {
+  el.addEventListener('change', applySettings);
+});
+quickInputs.forEach(el => el.addEventListener('change', applySettings));
+setCustomQuotes.addEventListener('change', applySettings);
+setBookBudget.addEventListener('change', applySettings);
+setBookBudgetWarn.addEventListener('change', applySettings);
+setBookSavings.addEventListener('change', applySettings);
+
+// Quote edit changes need debounced save (textareas change per keystroke)
+let quoteEditTimer;
+quoteEditList.addEventListener('input', (e) => {
+  if (settings.customQuotes) {
+    settings.quotesData = collectQuotesData();
+    saveSettings();
+    rebuildQuotes();
+    // Re-render to keep highlight dots in sync
+    clearTimeout(quoteEditTimer);
+    quoteEditTimer = setTimeout(() => { renderQuoteEditList(); }, 500);
+  }
+});
+
+// ─── Budget Bar ──────────────────────────────────────────────
+function updateBudgetBar() {
+  if (settings.bookBudget <= 0) {
+    bookBudgetInfo.style.display = 'none';
+    return;
+  }
+  bookBudgetInfo.style.display = 'block';
+  const monthTx = getMonthTx();
+  let expense = 0;
+  monthTx.forEach(t => { if (t.type === 'expense') expense += t.amount; });
+  const pct = Math.min(100, Math.round((expense / settings.bookBudget) * 100));
+  budgetBar.style.width = pct + '%';
+  budgetBar.style.background = pct > 100 ? 'var(--red)' : pct > 80 ? 'var(--gold)' : 'var(--green)';
+  budgetUsed.textContent = '¥' + expense.toLocaleString('zh-CN') + ' 已用';
+  const rem = settings.bookBudget - expense;
+  budgetRemain.textContent = (rem >= 0 ? '¥' : '-¥') + Math.abs(rem).toLocaleString('zh-CN') + ' 剩余';
+}
+
+function updateBookBudgetBar(expense) {
+  const bar = $('bookBudgetBar');
+  if (settings.bookBudget <= 0) {
+    bar.style.display = 'none';
+    return;
+  }
+  bar.style.display = 'block';
+  const pct = Math.min(100, Math.round((expense / settings.bookBudget) * 100));
+  const fill = $('bookBudgetBarFill');
+  fill.style.width = pct + '%';
+  fill.style.background = pct > 100 ? 'var(--red)' : pct > 80 ? 'var(--gold)' : 'var(--green)';
+  $('bookBudgetBarText').textContent = '¥' + expense.toLocaleString('zh-CN') + ' / ¥' + settings.bookBudget.toLocaleString('zh-CN');
+}
+
+// ─── Bookkeeping Data Export / Clear ──────────────────────────
+$('btnExportBook').addEventListener('click', () => {
+  const data = { transactions: bookTx, exportDate: new Date().toISOString() };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = '记账数据_备份_' + new Date().toISOString().slice(0, 10) + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('记账数据已导出 ✓');
+});
+
+$('btnClearBook').addEventListener('click', () => {
+  if (!confirm('确定要清除所有记账数据吗？建议先导出备份。')) return;
+  bookTx = [];
+  saveBookTx();
+  renderBookkeeping();
+  updateBudgetBar();
+  showToast('记账数据已清除');
+});
+
+// Quick buttons rendering
+function renderQuickBtns() {
+  const row = document.querySelector('.quick-row');
+  row.innerHTML = settings.quickAmounts.map(a =>
+    `<button class="quick-btn" data-amount="${a}">¥${a.toLocaleString('zh-CN')}</button>`
+  ).join('');
+  row.querySelectorAll('.quick-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (settings.sound) sfxClick();
+      pay(parseFloat(btn.dataset.amount));
+    });
+  });
+}
+
+// ─── Sound toggle ─────────────────────────────────────────────
+const sfxClickFn = () => { if (settings.sound) beep(800, 0.08, 'sine', 0.04); };
+const sfxPayFn = () => { if (settings.sound) beep(600, 0.12, 'triangle', 0.06); };
+const sfxMilestoneFn = () => {
+  if (!settings.sound) return;
+  beep(523, 0.1, 'sine', 0.07);
+  setTimeout(() => beep(659, 0.1, 'sine', 0.07), 100);
+  setTimeout(() => beep(784, 0.15, 'sine', 0.07), 200);
+};
+function sfxClick() { sfxClickFn(); }
+function sfxPay() { sfxPayFn(); }
+function sfxMilestone() { sfxMilestoneFn(); }
+
+// ─── Daily Reminder ───────────────────────────────────────────
+let reminderInterval;
+function requestNotificationPermission() {
+  if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission();
+  }
+}
+function scheduleReminder() {
+  clearReminder();
+  const hour = settings.reminderTime;
+  const now = new Date();
+  const target = new Date();
+  target.setHours(hour, 0, 0, 0);
+  if (target <= now) target.setDate(target.getDate() + 1);
+  const delay = target.getTime() - now.getTime();
+
+  const showNotification = () => {
+    if (!settings.reminder) return;
+    if ('Notification' in window && Notification.permission === 'granted') {
+      new Notification('别忘了还款！', {
+        body: `今日待还目标，剩余欠款 ${fmtMoney(remaining)}，继续加油！`,
+        icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">💰</text></svg>',
+        tag: 'debt-reminder',
+      });
+    }
+    // Schedule next
+    scheduleReminder();
+  };
+
+  reminderInterval = setTimeout(showNotification, delay);
+}
+function clearReminder() {
+  if (reminderInterval) { clearTimeout(reminderInterval); reminderInterval = null; }
+}
+
+// ─── Data Export / Import / Clear ─────────────────────────────
+$('btnExport').addEventListener('click', () => {
+  const data = {
+    history,
+    streak,
+    settings,
+    remaining,
+    milestones: [...triggeredMilestones],
+    bookTx,
+    exportDate: new Date().toISOString(),
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = '还钱之假如我欠款十万元_备份_' + new Date().toISOString().slice(0, 10) + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('数据已导出 ✓');
+});
+
+$('btnImport').addEventListener('click', () => {
+  const inp = document.createElement('input');
+  inp.type = 'file';
+  inp.accept = '.json';
+  inp.onchange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const data = JSON.parse(ev.target.result);
+        if (!data.history || !Array.isArray(data.history)) throw new Error('格式错误');
+        history = data.history;
+        streak = data.streak || { count: 0, lastDate: null };
+        settings = data.settings || { ...DEFAULT_SETTINGS };
+        remaining = data.remaining ?? (history.length > 0 ? history[history.length - 1].remaining : settings.target);
+        TOTAL = settings.target;
+        triggeredMilestones = new Set(data.milestones || []);
+        if (data.bookTx && Array.isArray(data.bookTx)) {
+          bookTx = data.bookTx;
+          saveBookTx();
+        }
+        // Persist
+        saveHistory();
+        saveSettings();
+        localStorage.setItem('debt2_streak', JSON.stringify(streak));
+        localStorage.setItem('debt2_milestones', JSON.stringify([...triggeredMilestones]));
+        // Apply
+        document.body.classList.toggle('light', settings.light);
+        renderQuickBtns();
+        populateSettings();
+        if (settings.reminder) { requestNotificationPermission(); scheduleReminder(); }
+        else clearReminder();
+        updateUI(false);
+        updateBudgetBar();
+        renderHistory();
+        streakCountEl.textContent = streak.count;
+        showToast('数据已导入 ✓');
+      } catch (err) {
+        showToast('导入失败：文件格式不正确');
+      }
+    };
+    reader.readAsText(file);
+  };
+  inp.click();
+});
+
+$('btnClearAll').addEventListener('click', () => {
+  if (!confirm('确定要清除全部数据吗？此操作不可恢复。\n\n建议先「导出数据」备份。')) return;
+  remaining = TOTAL = settings.target;
+  history = [];
+  streak = { count: 0, lastDate: null };
+  triggeredMilestones = new Set();
+  saveHistory();
+  saveSettings();
+  localStorage.setItem('debt2_streak', JSON.stringify(streak));
+  localStorage.setItem('debt2_milestones', '[]');
+  updateUI(false);
+  renderHistory();
+  streakCountEl.textContent = '0';
+  confetti.innerHTML = '';
+  showToast('已清除全部数据');
+});
+
+// ─── Init ─────────────────────────────────────────────────────
+document.body.classList.toggle('light', settings.light);
+updateUI(false);
+renderHistory();
+renderQuickBtns();
+streakCountEl.textContent = streak.count;
+populateSettings();
+if (settings.reminder) {
+  requestNotificationPermission();
+  scheduleReminder();
+}
+</script>
+</body>
+</html>
